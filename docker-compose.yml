@@ -1,0 +1,48 @@
+# ==============================================================================
+# ContainerCare – Docker Container Health Monitor
+# Complete Application Stack Docker Compose Definition
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # FastAPI Backend Service (Member 1 Monitoring + Member 2 Health Evaluation)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: containercare-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount host Docker Engine UNIX socket (read-only for security)
+      # Enables Docker Python SDK (docker.from_env) to inspect host containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - containercare-net
+
+  # ----------------------------------------------------------------------------
+  # React Frontend Service (Production Vite Build served via Nginx)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: containercare-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - containercare-net
+
+# ------------------------------------------------------------------------------
+# Isolated Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  containercare-net:
+    driver: bridge
